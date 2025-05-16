@@ -1,53 +1,53 @@
  // C:/Users/HP/Desktop/desktop/bycbackend/models/blog.js
-
 const mongoose = require('mongoose');
 
 const blogSchema = new mongoose.Schema({
   blogImage: {
     type: [String],
-    required: true
+    default: [''],
   },
   blogTitle: {
     type: String,
-    required: true,
-    minlength: 5,
-    maxlength: 50
+    required: [true, 'Blog title is required'],
+    trim: true,
+    maxLength: [100, 'Blog title cannot exceed 100 characters'],
   },
   blogDescription: {
     type: String,
-    required: true,
-    minlength: 5,
-    maxlength: 255
+    required: [true, 'Blog description is required'],
+    trim: true,
+    maxLength: [5000, 'Blog description cannot exceed 5000 characters'],
   },
   authorImage: {
     type: [String],
-    required: true
+    default: [''],
   },
   authorName: {
     type: String,
-    required: true,
-    minlength: 5,
-    maxlength: 50
+    required: [true, 'Author name is required'],
+    trim: true,
+    maxLength: [50, 'Author name cannot exceed 50 characters'],
   },
   authorProfession: {
     type: String,
-    required: true,
-    minlength: 5,
-    maxlength: 50
+    required: [true, 'Author profession is required'],
+    trim: true,
+    maxLength: [50, 'Author profession cannot exceed 50 characters'],
   },
   likes: {
     type: Number,
-    required: true,
-    default: 0
+    default: 0,
+    min: [0, 'Likes cannot be negative'],
   },
   views: {
     type: Number,
-    required: true,
-    default: 0
-  }
-}, { timestamps: true });
+    default: 0,
+    min: [0, 'Views cannot be negative'],
+  },
+  createdAt: {
+    type: Date,
+    default: Date.now,
+  },
+});
 
-const Blog = mongoose.model('Blog', blogSchema);
-
- module.exports = Blog;
- 
+module.exports = mongoose.model('Blog', blogSchema);

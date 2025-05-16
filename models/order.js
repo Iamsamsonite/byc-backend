@@ -1,3 +1,4 @@
+ // C:/Users/HP/Desktop/desktop/bycbackend/models/order.js
 const mongoose = require('mongoose');
 
 const orderSchema = new mongoose.Schema({
@@ -22,8 +23,10 @@ const orderSchema = new mongoose.Schema({
     {
       product: { type: mongoose.Schema.Types.ObjectId, ref: 'Product', required: true },
       quantity: { type: Number, required: true },
-      name: { type: String }, // Store name for display
-      price: { type: Number }, // Store price for display
+      name: { type: String, required: true },
+      price: { type: Number, required: true },
+      selectedColor: { type: String },
+      selectedSize: { type: String },
     },
   ],
   shippingAddress: {
@@ -41,6 +44,11 @@ const orderSchema = new mongoose.Schema({
   deliveryFee: { type: Number, required: true },
   totalAmount: { type: Number, required: true },
   orderDate: { type: Date, default: Date.now },
+  status: {
+    type: String,
+    enum: ['pending', 'processing', 'out for delivery', 'shipped', 'delivered', 'cancelled'],
+    default: 'pending',
+  },
 });
 
 module.exports = mongoose.model('Order', orderSchema);
