@@ -1,10 +1,11 @@
-const bcrypt = require('bcrypt');
+ // C:/Users/HP/Desktop/desktop/bycbackend/hash.js
+const bcryptjs = require('bcryptjs');
 
-async function run () {
-    const salt = await bcrypt.genSalt(10);
-    const hashed = await bcrypt.hash('1234', salt);
-    console.log(salt);
-    console.log(hashed);
+async function hashPassword() {
+  const password = 'oyedelesamson'; // Change to 'adminPass123' for better security
+  const salt = await bcryptjs.genSalt(10);
+  const hashed = await bcryptjs.hash(password, salt);
+  console.log('New hashed password:', hashed);
 }
 
-run()
+hashPassword();

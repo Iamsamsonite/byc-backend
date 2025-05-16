@@ -1,196 +1,49 @@
-const {User, validate} = require('../models/user');
+ // C:/Users/HP/Desktop/desktop/bycbackend/routes/user.js
 const express = require('express');
 const router = express.Router();
-const _ = require('lodash');
-const bcryptjs = require('bcryptjs');
-const auth = require('../middleware/auth');
+const bcrypt = require('bcryptjs');
+const jwt = require('jsonwebtoken');
+const User = require('../models/user');
 
+console.log('User model in user.js:', User);
 
-// // login user
-// router.post('/', async (req, res) => {
-//     const { error } = validate(req.body);
-//     if (error) return res.status(400).send(error.details[0].message);
+router.post('/login', async (req, res) => {
+  try {
+    console.log('Login attempt:', req.body);
+    const { email, password } = req.body;
 
-//     let user = await User.findOne({ emailAddress: req.body.emailAddress });
-//     if (!user) return res.status(400).send('Invalid email or password.');
+    if (!email || !password) {
+      console.error('Missing email or password:', req.body);
+      return res.status(400).json({ message: 'Email and password are required' });
+    }
 
-//     const validPassword = await bcryptjs.compare(req.body.password, user.password);
-//     if (!validPassword) return res.status(400).send('Invalid email or password.');
+    const user = await User.findOne({ email });
+    if (!user) {
+      console.error('User not found:', email);
+      return res.status(401).json({ message: 'Invalid credentials' });
+    }
 
-//     const token = user.generateAuthToken();
-//     res.send(token)
-// });
+    const isMatch = await bcrypt.compare(password, user.password);
+    if (!isMatch) {
+      console.error('Password mismatch for:', email);
+      return res.status(401).json({ message: 'Invalid credentials' });
+    }
 
-// login user
-router.post('/', async (req, res) => {
-    const { error } = validate(req.body);
-    if (error) return res.status(400).json({ message: error.details[0].message });
-  
-    const user = await User.findOne({ emailAddress: req.body.emailAddress });
-    if (!user) return res.status(400).json({ message: 'Invalid email or password.' });
-  
-    const validPassword = await bcryptjs.compare(req.body.password, user.password);
-    if (!validPassword) return res.status(400).json({ message: 'Invalid email or password.' });
-  
-    const token = user.generateAuthToken();
-  
-    // ✅ THIS IS THE CORRECT RESPONSE
-    return res.json({
+    const token = jwt.sign(
+      { id: user._id, role: user.role },
+      process.env.JWT_SECRET || 'your_jwt_secret',
+      { expiresIn: '1h' }
+    );
+
+    console.log('Login successful for:', email);
+    res.json({
       token,
-      user: {
-        id: user._id,
-        name: user.name,
-        emailAddress: user.emailAddress
-      }
+      user: { id: user._id, name: user.name, email: user.email, role: user.role }
     });
-  });
-  
-
-// // register user
-// router.post('/', async (req, res) => {
-//     const { error } = validate(req.body);
-//     if (error) return res.status(400).send(error.details[0].message);
-
-//     let user = await User.findOne({ emailAddress: req.body.emailAddress });
-//     if (user) return res.status(400).send('User already registered.');
-//     user = new User({
-//         name: req.body.name,
-//         emailAddress: req.body.emailAddress,
-//         password: req.body.password 
-//     })
-
-//     user = new User(_.pick(user, ['name', 'emailAddress', 'password']));
-//     const salt = await bcryptjs.genSalt(10);
-//     user.password = await bcryptjs.hash(user.password, salt);
-
-
-//     user = await user.save();
-
-//      const token = user.generateAuthToken();
-//     res.header('x-auth-token', token).send(_.pick(User, ['_id', 'name', 'emailAddress']));
-// });
-
-
-router.post('/', async (req, res) => {
-    const { error } = validate(req.body);
-    if (error) return res.status(400).send(error.details[0].message);
-  
-    let user = await User.findOne({ emailAddress: req.body.emailAddress });
-    if (user) return res.status(400).send('User already registered.');
-  
-    user = new User({
-      name: req.body.name,
-      emailAddress: req.body.emailAddress,
-      password: req.body.password
-    });
-  
-    const salt = await bcryptjs.genSalt(10);
-    user.password = await bcryptjs.hash(user.password, salt);
-  
-    user = await user.save();
-  
-    const token = user.generateAuthToken();
-    res.header('x-auth-token', token).send({
-      token,
-      user: _.pick(user, ['_id', 'name', 'emailAddress'])
-    });
-  });
-
-
-// // get a user by id
-router.get('/me', auth, async (req, res) => {
-     const user = await User.findById(req.user._id).select('-password');
-    res.send(user);
+  } catch (err) {
+    console.error('Login error:', err.message, err.stack);
+    res.status(500).json({ message: 'Server error', error: err.message });
+  }
 });
-
-
-// // route for admin login
-router.post('/', async (req, res) => {
-    const { error } = validate(req.body);
-    if (error) return res.status(400).send(error.details[0].message);
-
-    let admin = await admin.findOne({ emailAddress: req.body.emailAddress });
-    if (!admin) return res.status(400).send('Invalid email or password.');
-
-    const validPassword = await bcryptjs.compare(req.body.password, admin.password);
-    if (!validPassword) return res.status(400).send('Invalid email or password.');
-
-    const token = admin.generateAuthToken();
-    res.send(token)
-});
-
-
-
-
-    
-// // route for user login
-// router.post('/', async (req, res) => {
-//     const { error } = validate(req.body);
-//     if (error) return res.status(400).send(error.details[0].message);
-
-//     let user = await User.findOne({ emailAddress: req.body.emailAddress });
-//     if (!user) return res.status(400).send('Invalid email or password.');
-
-//     const validPassword = await bcryptjs.compare(req.body.password, user.password);
-//     if (!validPassword) return res.status(400).send('Invalid email or password.');
-
-//     const token = user.generateAuthToken();
-//     res.send(token)
-// });
-
-// //  get a user by id
-// router.get('/me', auth, async (req, res) => {
-//      const user = await User.findById(req.user._id).select('-password');
-//     res.send(user);
-// });
-
-
-// // route for admin login
-// router.post('/', async (req, res) => {
-//     const { error } = validate(req.body);
-//     if (error) return res.status(400).send(error.details[0].message);
-
-//     let admin = await admin.findOne({ emailAddress: req.body.emailAddress });
-//     if (!admin) return res.status(400).send('Invalid email or password.');
-
-//     const validPassword = await bcryptjs.compare(req.body.password, admin.password);
-//     if (!validPassword) return res.status(400).send('Invalid email or password.');
-
-//     const token = admin.generateAuthToken();
-//     res.send(token)
-// });
-
- 
-// // route for user registration
-// router.post('/', async (req, res) => {
-//     const { error } = validate(req.body);
-//     if (error) return res.status(400).send(error.details[0].message);
-
-    
-
-//     let user = await User.findOne({ emailAddress: req.body.emailAddress });
-//     if (user) return res.status(400).send('User already registered.');
-//     user = new User({
-//     name: req.body.name,
-//     emailAddress: req.body.emailAddress,
-//     password: req.body.password 
-//     })
-
-
-//     user = new User(_.pick(user, ['name', 'emailAddress', 'password']));
-//     const salt = await bcryptjs.genSalt(10);
-//     user.password = await bcryptjs.hash(user.password, salt);
-
-
-//     user = await user.save();
-
-//      const token = user.generateAuthToken();
-//     res.header('x-auth-token', token).send(_.pick(User, ['_id', 'name', 'emailAddress']));
-// });
-
-
-
-
- 
 
 module.exports = router;

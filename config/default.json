@@ -1,4 +1,7 @@
 {
-    "jwtPrivateKey": ""
+    "jwtPrivateKey": "byc_secure_jwt_secret_1234567890",
+    "admin": {
+        "email": "oyedelesamsonchrist@gmail.com",
+        "password": "oyedelesamson"
+    }
 }
-  

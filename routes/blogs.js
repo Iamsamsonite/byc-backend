@@ -1,70 +1,40 @@
-const {Blog, validateBlog} = require('../models/blog');
+ // C:/Users/HP/Desktop/desktop/bycbackend/routes/blogs.js
 const express = require('express');
 const router = express.Router();
+const Blog = require('../models/blog');
+const { validateBlog } = require('../models/blog');
 
-// GET /api/blogs
+console.log('Blog model:', Blog);
+
+// Get all blogs
 router.get('/', async (req, res) => {
-    const blogs = await Blog.find().sort('blogTitle');
-    res.send(blogs);
+  try {
+    const blogs = await Blog.find().sort({ createdAt: -1 });
+    console.log('Public blogs fetched:', blogs.length);
+    res.json(blogs);
+  } catch (err) {
+    console.error('Error fetching blogs:', err.message, err.stack);
+    res.status(500).json({ message: 'Internal Server Error', error: err.message });
+  }
 });
 
-// GET/api/blogs/:id
+// Get single blog by ID
 router.get('/:id', async (req, res) => {
+  try {
     const blog = await Blog.findById(req.params.id);
-    if (!blog) return res.status(404).send('The blog with the given ID was not found.');
-    res.send(blog);
+    if (!blog) {
+      console.error('Blog not found:', req.params.id);
+      return res.status(404).json({ message: 'Blog not found' });
+    }
+    // Increment views
+    blog.views += 1;
+    await blog.save();
+    console.log('Blog fetched:', blog.blogTitle);
+    res.json(blog);
+  } catch (err) {
+    console.error('Error fetching blog:', err.message, err.stack);
+    res.status(500).json({ message: 'Internal Server Error', error: err.message });
+  }
 });
 
-// POST /api/blogs
-router.post('/', async (req, res) => {
-    const { error } = validateBlog(req.body);
-    if (error) return res.status(400).send(error.details[0].message);
-
-    let blog = new Blog({
-        blogImage: req.body.blogImage,
-        blogTitle: req.body.blogTitle,
-        blogDescription: req.body.blogDescription,
-        authorImage: req.body.authorImage,
-        authorName: req.body.authorName,
-        authorProfession: req.body.authorProfession,
-        likes: req.body.likes,
-        views: req.body.views
-    });
-    
-    blog = await blog.save();
-    res.send(blog);
-});
-
-// PUT /api/blogs/:id
-router.put('/:id', async (req, res) => {
-    const { error } = validateBlog(req.body);
-    if (error) return res.status(400).send(error.details[0].message);
-
-    const blog = await Blog.findByIdAndUpdate(req.params.id, {
-        blogImage: req.body.blogImage,
-        blogTitle: req.body.blogTitle,
-        blogDescription: req.body.blogDescription,
-        authorImage: req.body.authorImage,
-        authorName: req.body.authorName,
-        authorProfession: req.body.authorProfession,
-        likes: req.body.likes,
-        views: req.body.views
-    }, { new: true });
-
-    if (!blog) return res.status(404).send('The blog with the given ID was not found.');
-    res.send(blog);
-});
-
-// DELETE /api/blogs/:id
-router.delete('/:id', async (req, res) => {
-    const blog = await Blog.findByIdAndDelete(req.params.id);
-
-    if (!blog) return res.status(404).send('The blog with the given ID was not found.');
-    res.send(blog);
-});
-
- 
 module.exports = router;
-// module.exports.Blog = Blog;
-// module.exports.validate = validateBlog;
-// module.exports = router;
