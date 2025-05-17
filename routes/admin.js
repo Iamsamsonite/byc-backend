@@ -95,67 +95,74 @@ router.delete('/users/:id', auth, async (req, res) => {
   // Get list of orders
 router.get('/orders', auth, async (req, res) => {
   try {
-    if (!req.user.isAdmin) return res.status(403).json({ message: 'Access denied' });
-    const orders = await Order.find()
-      .populate('user', 'name emailAddress')
+    const orders = await Order.find({ user: { $ne: null } }) // Filter out null users
+      .populate({
+        path: 'user',
+        select: 'name emailAddress',
+      })
       .populate({
         path: 'cartItems.product',
+        match: { _id: { $ne: null } }, // Filter out null product references
         select: 'productName productImage colors sizes',
-        populate: { path: 'category', select: 'name' },
+        populate: {
+          path: 'category',
+          select: 'name',
+        },
       })
       .sort({ createdAt: -1 });
-    res.json(orders);
-  } catch (err) {
-    console.error('Error fetching orders:', err.message);
-    res.status(500).json({ message: 'Internal Server Error', error: err.message });
+
+    res.status(200).json(orders);
+  } catch (error) {
+    console.error('Error in getAllOrders:', error);
+    res.status(500).json({ message: 'Error fetching orders', error });
   }
 });
-
+ 
 // Create order
+
+
 router.post('/orders', auth, async (req, res) => {
   try {
+    console.log('req.user:', req.user); // Debug
     if (!req.user.isAdmin) return res.status(403).json({ message: 'Access denied' });
-    const { orderId, user, cartItems, shippingAddress, paymentMethod, subtotal, deliveryFee, totalAmount, status } = req.body;
-    if (!orderId || !user || !cartItems || !shippingAddress || !paymentMethod || !subtotal || !deliveryFee || !totalAmount) {
-      return res.status(400).json({ message: 'All required fields must be provided' });
-    }
-    const userExists = await User.findById(user);
-    if (!userExists) return res.status(400).json({ message: 'Invalid user ID' });
-    // Validate cartItems
-    for (const item of cartItems) {
-      if (!item.product || !item.quantity || !item.name || !item.price) {
-        return res.status(400).json({ message: 'Each cart item must have product, quantity, name, and price' });
-      }
-      const productExists = await Product.findById(item.product);
-      if (!productExists) return res.status(400).json({ message: `Invalid product ID: ${item.product}` });
-      // Validate selectedColor and selectedSize if provided
-      if (item.selectedColor && !productExists.colors.some(c => c.name === item.selectedColor)) {
-        return res.status(400).json({ message: `Invalid color: ${item.selectedColor}` });
-      }
-      if (item.selectedSize && !productExists.sizes.includes(item.selectedSize)) {
-        return res.status(400).json({ message: `Invalid size: ${item.selectedSize}` });
-      }
-    }
-    const order = new Order({
+    console.log('Access denied: req.user:', req.user); // Note: This log is unreachable due to the return above
+    const {
       orderId,
-      user,
       cartItems,
       shippingAddress,
       paymentMethod,
       subtotal,
       deliveryFee,
       totalAmount,
-      status: status || 'pending',
-      orderDate: new Date(),
-    });
-    await order.save();
-    res.status(201).json(order);
+      status,
+    } = req.body;
+
+    const user = req.user.id;
+    console.log('User ID:', user); // Debug
+    console.log('Request body:', req.body); // Debug
+
+    if (!orderId || !cartItems || !shippingAddress || !paymentMethod || !subtotal || !deliveryFee || !totalAmount) {
+      return res.status(400).json({ message: 'All required fields must be provided' });
+    }
+
+    const userExists = await User.findById(user);
+    if (!userExists) {
+      console.log('User not found:', user); // Debug
+      return res.status(400).json({ message: 'Invalid user ID' });
+    }
+
+    // Rest of the route...
   } catch (err) {
-    console.error('Error creating order:', err.message);
+    console.error('Error creating order:', err);
+    if (err.name === 'ValidationError') {
+      const errors = Object.values(err.errors).map(e => e.message);
+      console.error('Validation errors:', errors); // Debug
+      return res.status(400).json({ message: 'Validation failed', errors });
+    }
     res.status(500).json({ message: 'Internal Server Error', error: err.message });
   }
 });
- 
+
 
 // Delete order
 router.delete('/orders/:id', auth, async (req, res) => {
@@ -170,35 +177,37 @@ router.delete('/orders/:id', auth, async (req, res) => {
   }
 });
 
-// Create order
-router.post('/orders', auth, async (req, res) => {
+ // PATCH /api/orders/:id/status
+router.patch('/orders/:id/status', auth, async (req, res) => {
   try {
-    if (!req.user.isAdmin) return res.status(403).json({ message: 'Access denied' });
-    const { orderId, user, cartItems, shippingAddress, paymentMethod, subtotal, deliveryFee, totalAmount, status } = req.body;
-    if (!orderId || !user || !cartItems || !shippingAddress || !paymentMethod || !subtotal || !deliveryFee || !totalAmount) {
-      return res.status(400).json({ message: 'All required fields must be provided' });
+    if (!req.user?.isAdmin) {
+      return res.status(403).json({ message: 'Access denied' });
     }
-    const userExists = await User.findById(user);
-    if (!userExists) return res.status(400).json({ message: 'Invalid user ID' });
-    const order = new Order({
-      orderId,
-      user,
-      cartItems,
-      shippingAddress,
-      paymentMethod,
-      subtotal,
-      deliveryFee,
-      totalAmount,
-      status: status || 'pending',
-      orderDate: new Date()
-    });
-    await order.save();
-    res.status(201).json(order);
+
+    const { id } = req.params; // MongoDB _id
+    const { status } = req.body;
+
+    if (!status) {
+      return res.status(400).json({ message: 'Status is required' });
+    }
+
+    const order = await Order.findByIdAndUpdate(
+      id,
+      { status },
+      { new: true }
+    );
+
+    if (!order) {
+      return res.status(404).json({ message: 'Order not found' });
+    }
+
+    res.json(order);
   } catch (err) {
-    console.error('Error creating order:', err.message);
+    console.error('Error updating order:', err.message);
     res.status(500).json({ message: 'Internal Server Error', error: err.message });
   }
 });
+
 
 // Get product by ID
 router.get('/products/:id', auth, async (req, res) => {
@@ -489,3 +498,6 @@ router.delete('/blogs/:id', auth, async (req, res) => {
 });
 
 module.exports = router;
+
+
+

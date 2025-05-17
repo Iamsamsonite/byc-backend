@@ -53,10 +53,10 @@ const mongoose = require('mongoose');
 const cors = require('cors');
 const dotenv = require('dotenv');
 const adminRoutes = require('./routes/admin');
-const blogRoutes = require('./routes/blogs');
-const userRoutes = require('./routes/users');
-const productRoutes = require('./routes/products');
-const orderRoutes = require('./routes/order');
+// const blogRoutes = require('./routes/blogs');
+// const userRoutes = require('./routes/users');
+// const productRoutes = require('./routes/products');
+// const orderRoutes = require('./routes/order');
 const searchRoutes = require('./routes/search');
 
 dotenv.config();
@@ -73,10 +73,10 @@ app.use('/api/byc/blogs', require('./routes/blogs'));
 app.use('/api/byc/wishlist', require('./routes/wishlist'));
 app.use('/api/byc/categories', require('./routes/categories'));
 app.use('/api/byc/admin', adminRoutes);
-app.use('/api/byc/blogs', blogRoutes);
-app.use('/api/byc/users', userRoutes);
-app.use('/api/byc/products', productRoutes);
-app.use('/api/byc/orders', orderRoutes);
+// app.use('/api/byc/blogs', blogRoutes);
+// app.use('/api/byc/users', userRoutes);
+// app.use('/api/byc/products', productRoutes);
+// app.use('/api/byc/orders', orderRoutes);
 app.use('/api/byc/search', searchRoutes); // Register search route
 
 
