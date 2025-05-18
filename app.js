@@ -65,6 +65,9 @@ const app = express();
 app.use(cors({ origin:process.env.FRONTEND_URL || 'http://localhost:3000' }));
 app.use(express.json());
 
+app.get('/', (req, res) => {
+  res.json({ message: 'Welcome to BYC Backend API' });
+});
 app.use('/api/byc/auth', require('./routes/auth'));
 app.use('/api/byc/products', require('./routes/products'));
 app.use('/api/byc/orders', require('./routes/order'));
