@@ -77,6 +77,20 @@ router.get('/', async (req, res) => {
   }
 });
 
+// GET a category by ID
+router.get('/:id', async (req, res) => {
+  try {
+    const category = await Category.findById(req.params.id);
+    if (!category) {
+      return res.status(404).json({ message: 'Category not found' });
+    }
+    res.json(category);
+  } catch (error) {
+    console.error('Error fetching category:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
 // Add category (admin only)
 router.post('/', adminAuth, async (req, res) => {
   try {
