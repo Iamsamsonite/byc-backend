@@ -53,7 +53,7 @@ router.post('/register', async (req, res) => {
 
     console.log('User registered successfully:', emailAddress);
     res.status(201).json({
-      id: user._id,
+      _id: user._id,
       name: user.name,
       emailAddress: user.emailAddress,
       role: user.role,
@@ -88,7 +88,7 @@ router.post('/login', async (req, res) => {
     }
 
     const token = jwt.sign(
-      { id: user._id, role: user.role },
+      { _id: user._id, role: user.role },
       process.env.JWT_SECRET || 'your_jwt_secret',
       { expiresIn: '1h' }
     );
